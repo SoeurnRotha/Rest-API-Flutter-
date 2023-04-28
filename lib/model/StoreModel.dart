@@ -8,6 +8,10 @@ List<StoreModel> storeModelFromMap(String str) => List<StoreModel>.from(json.dec
 
 String storeModelToMap(List<StoreModel> data) => json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
 
+List<String> categortModelFromMap(String str) => List<String>.from(json.decode(str).map((x) => x));
+
+String categortModelToMap(List<String> data) => json.encode(List<dynamic>.from(data.map((x) => x)));
+
 class StoreModel {
   int id;
   String title;

@@ -1,7 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:restful_api/model/StoreModel.dart';
+import 'package:restful_api/screen/DetailPage.dart';
 import 'package:restful_api/screen/ImageSlider.dart';
+import 'package:restful_api/screen/category.dart';
+import 'package:restful_api/screen/home.dart';
 import 'package:restful_api/server/storeApi_server.dart';
 void main(){
   runApp(const RestFulAPI());
@@ -15,31 +17,20 @@ class RestFulAPI extends StatefulWidget {
 }
 
 class _RestFulAPIState extends State<RestFulAPI> {
-  List<StoreModel>? storeModel;
-  bool isLoadding = false;
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    //fetch data from api
-    getDataFromStore();
-  }
-  getDataFromStore() async{
-    storeModel = await StoreServer().getStore();
-    if(storeModel != null){
-      setState(() {
-        isLoadding = true;
-      });
-    }
-  }
+  StoreModel? storeModel;
+  StoreServer storeServer = StoreServer();
+  bool isLoading = false;
+  List<StoreModel>? storeList;
 
   @override
   Widget build(BuildContext context) {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: buildScaffold(context),
+      routes: {
+        '/' : (context) => buildScaffold(context),
+        '/detail': (context)=> DetailPage(storeModel: storeModel!)
+      },
     );
   }
   Widget buildScaffold(BuildContext context){
@@ -54,70 +45,36 @@ class _RestFulAPIState extends State<RestFulAPI> {
     );
   }
   Widget _buildBody(BuildContext context){
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const ImageSlider(),
-          _buildListView
-        ],
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      child: SingleChildScrollView(
+        child: Column(
+            children: const [
+              ImageSlider(),
+              Category(),
+              HomePage()
+            ],
+          ),
       ),
     );
   }
 
-  get _buildListView{
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        mainAxisExtent: 300
-      ),
-      itemCount: storeModel?.length,
-      itemBuilder: (context , index){
-        return Container(
-          height: 250,
-          margin: const EdgeInsets.all(5),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: Colors.white
-          ),
-          child: Column(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(10),
-                    topLeft: Radius.circular(10)),
-                  child: Image.network(storeModel![index].image,height: 170,fit: BoxFit.cover,width: double.infinity)
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(storeModel![index].title,maxLines: 2,overflow: TextOverflow.ellipsis,),
-                    Text("${storeModel![index].price}",maxLines: 2,overflow: TextOverflow.ellipsis,style: const TextStyle(fontWeight: FontWeight.bold),),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(CupertinoIcons.heart),
-                          onPressed: (){
+  Future<void> _refreshData() async{
+    setState(() {
+      isLoading = true;
+    });
 
-                          },
-                        ),
-                        IconButton(onPressed: (){}, icon: const Icon(CupertinoIcons.cart))
-                      ],
-                    )
-                  ],
-                ),
-              )
-            ],
-          ),
-        );
-      },
-
-    );
+    try{
+      List<StoreModel> newData = await storeServer.getStore();
+      setState(() {
+        storeList = newData;
+        isLoading = false;
+      });
+    }catch(e){
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
 }
